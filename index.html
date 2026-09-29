@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>고객 관리 & 지도 서비스</title>
+    
+    <!-- Leaflet 지도 라이브러리 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Google Identity Services (OAuth) API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8f9fa;
+            overflow: hidden;
+        }
+
+        /* 로그인 레이어 */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); display: flex;
+            justify-content: center; align-items: center; z-index: 9999;
+        }
+        .login-box {
+            background: white; padding: 30px; border-radius: 12px; text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-width: 90%; width: 340px;
+        }
+        .login-btn {
+            background-color: #4285F4; color: white; border: none; padding: 12px 24px;
+            font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 15px; width: 100%;
+        }
+
+        /* 메인 컨테이너 구조 */
+        #app-container { display: flex; flex-direction: column; height: 100vh; }
+
+        /* 상단 메인 탭 */
+        .main-tabs {
+            display: flex; background: #ffffff; border-bottom: 2px solid #e9ecef;
+        }
+        .main-tab-btn {
+            flex: 1; padding: 14px 0; text-align: center; background: none; border: none;
+            font-size: 16px; font-weight: bold; color: #6c757d; cursor: pointer;
+            border-bottom: 3px solid transparent; transition: all 0.2s;
+        }
+        .main-tab-btn.active {
+            color: #0052FF; border-bottom-color: #0052FF;
+        }
+
+        /* 탭 본문 영역 */
+        .tab-content { flex: 1; display: none; height: calc(100vh - 51px); overflow: hidden; }
+        .tab-content.active { display: block; }
+
+        /* [첫번째 탭] 고객 목록 화면 */
+        #list-tab-view { display: flex; flex-direction: column; height: 100%; padding: 15px; }
+        
+        /* 세부 구분 탭 (스크롤 가능) */
+        .sub-tabs-container {
+            display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 10px;
+            white-space: nowrap; -webkit-overflow-scrolling: touch;
+        }
+        .sub-tab-btn {
+            padding: 8px 16px; background: #e9ecef; color: #495057; border: none;
+            border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+        .sub-tab-btn.active {
+            background: #0052FF; color: white;
+        }
+
+        /* 표 영역 */
+        .table-wrapper {
+            flex: 1; overflow-y: auto; background: white; border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background: #f1f3f5; position: sticky; top: 0; font-weight: bold; color: #495057; }
+        tr:hover { background-color: #f8f9fa; }
+        .badge {
+            display: inline-block; padding: 3px 8px; border-radius: 12px;
+            font-size: 11px; font-weight: bold; background: #e9ecef; color: #333;
+        }
+
+        /* 테이블 내 네비게이션 버튼 */
+        .table-nav-btn {
+            padding: 6px 10px; border: none; border-radius: 4px; color: white;
+            font-size: 11px; font-weight: bold; cursor: pointer; margin-right: 2px;
+        }
+
+        /* [두번째 탭] 지도 화면 */
+        #map { width: 100%; height: 100%; }
+
+        /* 지도 인포윈도우 스타일 */
+        .info-popup { min-width: 200px; padding: 5px; }
+        .info-popup h3 { margin: 0 0 5px 0; font-size: 16px; }
+        .info-popup p { margin: 0 0 10px 0; font-size: 13px; color: #666; }
+        .nav-btn-group { display: flex; gap: 6px; }
+        .nav-btn {
+            flex: 1; padding: 8px 0; border: none; border-radius: 6px;
+            color: white; font-size: 12px; font-weight: bold; cursor: pointer; text-align: center;
+        }
+        .btn-naver { background-color: #03C75A; }
+        .btn-tmap { background-color: #0052FF; }
+    </style>
+</head>
+<body>
+
+    <!-- 로그인 레이어 -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>고객 관리 서비스</h2>
+            <p>구글 시트 연동을 위해 로그인하세요.</p>
+            <button class="login-btn" onclick="handleAuthClick()">Google 계정으로 로그인</button>
+        </div>
+    </div>
+
+    <div id="app-container">
+        <!-- 상단 메인 탭 -->
+        <div class="main-tabs">
+            <button class="main-tab-btn active" onclick="switchMainTab('list')">고객 목록</button>
+            <button class="main-tab-btn" onclick="switchMainTab('map')">고객 지도</button>
+        </div>
+
+        <!-- 탭 1: 고객 목록 표 -->
+        <div id="tab-list" class="tab-content active">
+            <div id="list-tab-view">
+                <!-- 세부 구분 탭 (동적 생성) -->
+                <div id="sub-tabs" class="sub-tabs-container"></div>
+                
+                <!-- 표 데이터 -->
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>구분</th>
+                                <th>고객명</th>
+                                <th>주소</th>
+                                <th style="width: 110px;">길안내</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customer-table-body">
+                            <!-- JS로 행이 동적 생성됩니다 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 탭 2: 지도 -->
+        <div id="tab-map" class="tab-content">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 설정값 입력 (본인 정보로 수정)
+        // ==========================================
+        const CLIENT_ID = '948214777302-hp55blfsm3kqf1v36k504pd43m32iqi5.apps.googleusercontent.com'; // Google Cloud Console에서 발급된 Client ID
+        const SPREADSHEET_ID = '1_dSzaR0zIuM4G0JTi_J8860C6EUyFsqWhn45iS8KxxY';               // 구글 시트 URL의 /d/와 /edit 사이 ID
+        const SHEET_NAME = '거래처';                                     // 시트 탭 이름
+
+        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+        
+        let tokenClient;
+        let customerData = [];
+        let map;
+        let markers = [];
+        let currentFilter = '전체';
+
+        // 1. Google OAuth 로그인 초기화 및 GIS 라이브러리 체크
+        window.onload = () => {
+            initGoogleAuth();
+            initMap();
+        };
+
+        function initGoogleAuth() {
+            if (typeof google === 'undefined' || !google.accounts) {
+                setTimeout(initGoogleAuth, 100);
+                return;
+            }
+
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: async (response) => {
+                    if (response.error !== undefined) {
+                        alert('인증 오류가 발생했습니다: ' + response.error);
+                        return;
+                    }
+                    document.getElementById('login-overlay').style.display = 'none';
+                    await fetchSheetData(response.access_token);
+                },
+            });
+        }
+
+        function handleAuthClick() {
+            if (!tokenClient) {
+                alert('구글 인증 라이브러리를 로드 중입니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            tokenClient.requestAccessToken({ prompt: 'consent' });
+        }
+
+        // 2. Google Sheets API로 데이터 가져오기
+        async function fetchSheetData(accessToken) {
+            // A2:E 범위 (고객명, 주소, 위도, 경도, 구분)
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A2:E`;
+
+            try {
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error?.message || '데이터 로딩 실패');
+                }
+
+                const data = await res.json();
+                const rows = data.values || [];
+
+                customerData = rows.map(row => ({
+                    name: row[0] || '',
+                    address: row[1] || '',
+                    lat: parseFloat(row[2]),
+                    lng: parseFloat(row[3]),
+                    category: row[4] ? row[4].trim() : '미분류'
+                }));
+
+                renderSubTabs();
+                renderTable('전체');
+                renderMapMarkers();
+
+            } catch (err) {
+                console.error(err);
+                alert('시트 데이터를 불러오는데 실패했습니다: ' + err.message);
+            }
+        }
+
+        // 3. 목록 세부 탭 (구분 필터) 생성
+        function renderSubTabs() {
+            const categories = ['전체', ...new Set(customerData.map(item => item.category))];
+            const container = document.getElementById('sub-tabs');
+            container.innerHTML = '';
+
+            categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `sub-tab-btn ${cat === '전체' ? 'active' : ''}`;
+                btn.textContent = cat;
+                btn.onclick = () => {
+                    document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = cat;
+                    renderTable(cat);
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        // 4. 테이블(표) 렌더링
+        function renderTable(filterCategory) {
+            const tbody = document.getElementById('customer-table-body');
+            tbody.innerHTML = '';
+
+            const filteredData = filterCategory === '전체' 
+                ? customerData 
+                : customerData.filter(item => item.category === filterCategory);
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#888;">해당하는 고객이 없습니다.</td></tr>`;
+                return;
+            }
+
+            filteredData.forEach(item => {
+                const tr = document.createElement('tr');
+                const hasCoords = !isNaN(item.lat) && !isNaN(item.lng);
+
+                tr.innerHTML = `
+                    <td><span class="badge">${escapeHtml(item.category)}</span></td>
+                    <td><strong>${escapeHtml(item.name)}</strong></td>
+                    <td style="font-size: 13px; color: #555;">${escapeHtml(item.address)}</td>
+                    <td>
+                        ${hasCoords ? `
+                            <button class="table-nav-btn btn-naver" onclick="openNaverNavi(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">네이버</button>
+                            <button class="table-nav-btn btn-tmap" onclick="openTmap(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">TMAP</button>
+                        ` : '<span style="font-size:11px; color:#aaa;">좌표없음</span>'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 5. 지도 및 마커 초기화
+        function initMap() {
+            map = L.map('map').setView([37.5665, 126.9780], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19, 
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+        }
+
+        function renderMapMarkers() {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            const bounds = [];
+
+            customerData.forEach(item => {
+                if (!isNaN(item.lat) && !isNaN(item.lng)) {
+                    bounds.push([item.lat, item.lng]);
+
+                    const marker = L.marker([item.lat, item.lng]).addTo(map);
+                    const popupContent = `
+                        <div class="info-popup">
+                            <span class="badge" style="margin-bottom: 5px;">${escapeHtml(item.category)}</span>
+                            <h3>${escapeHtml(item.name)}</h3>
+                            <p>${escapeHtml(item.address)}</p>
+                            <div class="nav-btn-group">
+                                <button class="nav-btn btn-naver" onclick="openNaverNavi(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">네이버 지도</button>
+                                <button class="nav-btn btn-tmap" onclick="openTmap(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">TMAP</button>
+                            </div>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    markers.push(marker);
+                }
+            });
+
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+
+        // 6. 상단 메인 탭 전환
+        function switchMainTab(tabName) {
+            document.querySelectorAll('.main-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tabName === 'list') {
+                document.querySelectorAll('.main-tab-btn')[0].classList.add('active');
+                document.getElementById('tab-list').classList.add('active');
+            } else {
+                document.querySelectorAll('.main-tab-btn')[1].classList.add('active');
+                document.getElementById('tab-map').classList.add('active');
+                
+                setTimeout(() => {
+                    if (map) map.invalidateSize();
+                }, 100);
+            }
+        }
+
+        // 7. 길안내 실행 함수
+        function openNaverNavi(lat, lng, name) {
+            window.location.href = `nmap://route/car?dlat=${lat}&dlng=${lng}&dname=${encodeURIComponent(name)}&appname=myCustomerMap`;
+        }
+
+        function openTmap(lat, lng, name) {
+            window.location.href = `tmap://route?goalname=${encodeURIComponent(name)}&goalx=${lng}&goaly=${lat}`;
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        }
+    </script>
+</body>
+</html>
