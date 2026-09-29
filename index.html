@@ -210,7 +210,7 @@
         // 2. Google Sheets API로 데이터 가져오기
         async function fetchSheetData(accessToken) {
             // A2:E 범위 (고객명, 주소, 위도, 경도, 구분)
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A2:E`;
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A:Q`;
 
             try {
                 const res = await fetch(url, {
