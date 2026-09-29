@@ -1,40 +1,39 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0,
+                   maximum-scale=1.0, user-scalable=no">
     <title>고객 관리 & 지도 서비스</title>
 
-    <!-- Leaflet 지도 라이브러리 -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- 카카오 지도 API: 발급받은 JavaScript 키 입력 -->
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=452044976c6f8980378450013d49ce90&autoload=false"></script>
 
-    <!-- Google Identity Services (OAuth) API -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client"
+            async defer></script>
 
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont,
+                "Segoe UI", Roboto, sans-serif;
             background-color: #f8f9fa;
             overflow: hidden;
         }
 
-        /* 로그인 레이어 */
+        /* 로그인 */
         #login-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            inset: 0;
+            background: rgba(0,0,0,.7);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -46,13 +45,13 @@
             padding: 30px;
             border-radius: 12px;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,.2);
             max-width: 90%;
             width: 340px;
         }
 
         .login-btn {
-            background-color: #4285F4;
+            background: #4285F4;
             color: white;
             border: none;
             padding: 12px 24px;
@@ -64,7 +63,7 @@
             width: 100%;
         }
 
-        /* 메인 컨테이너 구조 */
+        /* 메인 레이아웃 */
         #app-container {
             display: flex;
             flex-direction: column;
@@ -73,11 +72,10 @@
             overflow: hidden;
         }
 
-        /* 상단 메인 탭 */
         .main-tabs {
             display: flex;
             flex: 0 0 auto;
-            background: #ffffff;
+            background: white;
             border-bottom: 2px solid #e9ecef;
             position: relative;
             z-index: 1000;
@@ -94,7 +92,6 @@
             color: #6c757d;
             cursor: pointer;
             border-bottom: 3px solid transparent;
-            transition: all 0.2s;
         }
 
         .main-tab-btn.active {
@@ -102,20 +99,16 @@
             border-bottom-color: #0052FF;
         }
 
-        /* 탭 본문 영역 */
         .tab-content {
             flex: 1 1 0;
             display: none;
-            height: auto;
             min-height: 0;
             overflow: hidden;
         }
 
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content.active { display: block; }
 
-        /* [첫번째 탭] 고객 목록 화면 */
+        /* 고객 목록 */
         #list-tab-view {
             display: flex;
             flex-direction: column;
@@ -123,7 +116,6 @@
             padding: 15px;
         }
 
-        /* 세부 구분 탭 (스크롤 가능) */
         .sub-tabs-container {
             display: flex;
             gap: 8px;
@@ -151,14 +143,13 @@
             color: white;
         }
 
-        /* 표 영역 */
         .table-wrapper {
             flex: 1;
             min-height: 0;
             overflow-y: auto;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,.1);
         }
 
         table {
@@ -182,26 +173,10 @@
             color: #495057;
         }
 
-        tr:hover {
-            background-color: #f8f9fa;
-        }
+        tr:hover { background-color: #f8f9fa; }
 
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            background: #e9ecef;
-            color: #333;
-        }
+        .navigation-cell { vertical-align: middle; }
 
-        /* 길안내 셀의 세로 중앙 정렬 */
-        .navigation-cell {
-            vertical-align: middle;
-        }
-
-        /* 길안내 버튼 두 개를 세로로 배치 */
         .table-nav-group {
             display: flex;
             flex-direction: column;
@@ -209,15 +184,11 @@
             gap: 8px;
         }
 
-        /* 테이블 내 길안내 버튼 */
         .table-nav-btn {
             display: block;
             width: 100%;
-            box-sizing: border-box;
             min-height: 44px;
             padding: 10px 8px;
-            margin: 0;
-
             border: none;
             border-radius: 6px;
             color: white;
@@ -226,7 +197,7 @@
             cursor: pointer;
         }
 
-        /* [두번째 탭] 지도 화면 */
+        /* 카카오 지도 */
         #tab-map {
             position: relative;
             padding: 0;
@@ -239,7 +210,7 @@
             height: 100%;
         }
 
-        /* 거래처 지도 핀: 구분별 색상 */
+        /* 요일별 거래처 핀 */
         .customer-pin-wrap {
             background: transparent;
             border: 0;
@@ -248,10 +219,10 @@
         .customer-pin {
             width: 24px;
             height: 24px;
-            border: 2px solid #ffffff;
+            border: 2px solid white;
             border-radius: 50% 50% 50% 0;
             transform: rotate(-45deg);
-            box-shadow: 0 1px 4px rgba(0,0,0,0.45);
+            box-shadow: 0 1px 4px rgba(0,0,0,.45);
         }
 
         .customer-pin::after {
@@ -260,51 +231,65 @@
             width: 8px;
             height: 8px;
             margin: 6px auto;
-            background: #ffffff;
+            background: white;
             border-radius: 50%;
         }
 
+        /* 핀 옆 거래처명 */
         .customer-name-label {
-            background: rgba(255,255,255,0.95);
+            display: inline-block;
+            background: rgba(255,255,255,.96);
             border: 1px solid #d0d7de;
             border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            box-shadow: 0 1px 3px rgba(0,0,0,.2);
             color: #222;
             font-size: 12px;
             font-weight: 700;
             padding: 3px 6px;
             white-space: nowrap;
+            pointer-events: none;
         }
 
-        .customer-name-label::before {
-            border-right-color: #d0d7de;
-        }
-
+        /* 현재 위치 */
         .current-location-dot {
             width: 18px;
             height: 18px;
             background: #1677ff;
-            border: 3px solid #ffffff;
+            border: 3px solid white;
             border-radius: 50%;
-            box-shadow: 0 0 0 7px rgba(22,119,255,0.2),
-                        0 1px 5px rgba(0,0,0,0.35);
+            box-shadow: 0 0 0 7px rgba(22,119,255,.2),
+                        0 1px 5px rgba(0,0,0,.35);
         }
 
-        /* 지도 인포윈도우 스타일 */
+        /* 거래처 정보창 */
         .info-popup {
-            min-width: 200px;
-            padding: 5px;
+            min-width: 220px;
+            padding: 12px;
+            color: #222;
+            font-family: sans-serif;
         }
 
         .info-popup h3 {
-            margin: 0 0 5px 0;
+            margin: 7px 0;
             font-size: 16px;
         }
 
         .info-popup p {
-            margin: 0 0 10px 0;
+            margin: 0 0 10px;
             font-size: 13px;
             color: #666;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #e9ecef;
+            color: #333;
         }
 
         .nav-btn-group {
@@ -314,558 +299,725 @@
 
         .nav-btn {
             flex: 1;
-            padding: 8px 0;
+            padding: 9px 5px;
             border: none;
             border-radius: 6px;
             color: white;
             font-size: 12px;
             font-weight: bold;
             cursor: pointer;
-            text-align: center;
+            white-space: nowrap;
         }
 
-        .btn-naver {
-            background-color: #03C75A;
-        }
+        .btn-naver { background: #03C75A; }
+        .btn-tmap { background: #0052FF; }
 
-        .btn-tmap {
-            background-color: #0052FF;
+        /* 현재 위치 버튼 */
+        #my-location-btn {
+            position: absolute;
+            right: 12px;
+            bottom: 25px;
+            z-index: 10;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 11px 14px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,.2);
+            cursor: pointer;
         }
     </style>
 </head>
 
 <body>
 
-    <!-- 로그인 레이어 -->
-    <div id="login-overlay">
-        <div class="login-box">
-            <h2>고객 관리 서비스</h2>
-            <p>구글 시트 연동을 위해 로그인하세요.</p>
-            <button class="login-btn" onclick="handleAuthClick()">
-                Google 계정으로 로그인
-            </button>
-        </div>
+<div id="login-overlay">
+    <div class="login-box">
+        <h2>고객 관리 서비스</h2>
+        <p>구글 시트 연동을 위해 로그인하세요.</p>
+        <button class="login-btn" onclick="handleAuthClick()">
+            Google 계정으로 로그인
+        </button>
+    </div>
+</div>
+
+<div id="app-container">
+
+    <div class="main-tabs">
+        <button class="main-tab-btn active"
+                onclick="switchMainTab('list')">
+            고객 목록
+        </button>
+        <button class="main-tab-btn"
+                onclick="switchMainTab('map')">
+            고객 지도
+        </button>
     </div>
 
-    <div id="app-container">
+    <div id="tab-list" class="tab-content active">
+        <div id="list-tab-view">
+            <div id="sub-tabs" class="sub-tabs-container"></div>
 
-        <!-- 상단 메인 탭 -->
-        <div class="main-tabs">
-            <button class="main-tab-btn active" onclick="switchMainTab('list')">
-                고객 목록
-            </button>
-            <button class="main-tab-btn" onclick="switchMainTab('map')">
-                고객 지도
-            </button>
-        </div>
-
-        <!-- 탭 1: 고객 목록 표 -->
-        <div id="tab-list" class="tab-content active">
-            <div id="list-tab-view">
-
-                <!-- 세부 구분 탭 -->
-                <div id="sub-tabs" class="sub-tabs-container"></div>
-
-                <!-- 표 데이터 -->
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>거래처명</th>
-                                <th style="width: 110px;">길안내</th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="customer-table-body">
-                            <!-- JS로 행이 동적 생성됩니다 -->
-                        </tbody>
-                    </table>
-                </div>
-
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>거래처명</th>
+                            <th style="width:110px;">길안내</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customer-table-body"></tbody>
+                </table>
             </div>
         </div>
-
-        <!-- 탭 2: 지도 -->
-        <div id="tab-map" class="tab-content">
-            <div id="map"></div>
-        </div>
-
     </div>
 
-    <script>
-        // ==========================================
-        // 설정값 입력
-        // ==========================================
-        const CLIENT_ID = '948214777302-hp55blfsm3kqf1v36k504pd43m32iqi5.apps.googleusercontent.com';
-        const SPREADSHEET_ID = '1_dSzaR0zIuM4G0JTi_J8860C6EUyFsqWhn45iS8KxxY';
-        const SHEET_NAME = '거래처';
+    <div id="tab-map" class="tab-content">
+        <div id="map"></div>
+        <button id="my-location-btn" onclick="goToMyLocation()">
+            ◎ 내 위치
+        </button>
+    </div>
 
-        const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+</div>
 
-        let tokenClient;
-        let customerData = [];
-        let map;
-        let markers = [];
-        let currentFilter = '전체';
-        let currentLocationMarker = null;
-        let currentLocationRequested = false;
+<script>
+    // ==========================================
+    // 설정
+    // ==========================================
+    const CLIENT_ID =
+        '948214777302-hp55blfsm3kqf1v36k504pd43m32iqi5.apps.googleusercontent.com';
 
-        // dow(요일)별 핀 색상 팔레트 (요일 값에 따라 순환 적용)
-        const PIN_COLORS = [
-            '#E53935', '#1E88E5', '#43A047', '#8E24AA',
-            '#FB8C00', '#00897B', '#6D4C41', '#3949AB',
-            '#D81B60', '#546E7A'
-        ];
+    const SPREADSHEET_ID =
+        '1_dSzaR0zIuM4G0JTi_J8860C6EUyFsqWhn45iS8KxxY';
 
-        const divisionColorMap = new Map();
+    const SHEET_NAME = '거래처';
+    const SCOPES =
+        'https://www.googleapis.com/auth/spreadsheets.readonly';
 
-        function getDivisionColor(division) {
-            if (!divisionColorMap.has(division)) {
-                const color = PIN_COLORS[divisionColorMap.size % PIN_COLORS.length];
-                divisionColorMap.set(division, color);
-            }
-            return divisionColorMap.get(division);
+    let tokenClient;
+    let customerData = [];
+    let map;
+    let markers = [];
+    let labelOverlays = [];
+    let currentFilter = '전체';
+    let currentLocationMarker = null;
+    let currentLocation = null;
+    let currentLocationRequested = false;
+    let infoWindow = null;
+
+    // dow별 색상
+    const PIN_COLORS = [
+        '#E53935', // 월
+        '#1E88E5', // 화
+        '#43A047', // 수
+        '#8E24AA', // 목
+        '#FB8C00', // 금
+        '#00897B',
+        '#6D4C41',
+        '#3949AB',
+        '#D81B60',
+        '#546E7A'
+    ];
+
+    const DOW_MAP = {
+        '1': '월',
+        '2': '화',
+        '3': '수',
+        '4': '목',
+        '5': '금'
+    };
+
+    const divisionColorMap = new Map();
+
+    function getDivisionColor(division) {
+        if (!divisionColorMap.has(division)) {
+            const color =
+                PIN_COLORS[divisionColorMap.size % PIN_COLORS.length];
+
+            divisionColorMap.set(division, color);
         }
 
-        // 요일 매핑 테이블 (1: 월 ~ 5: 금)
-        const DOW_MAP = {
-            '1': '월',
-            '2': '화',
-            '3': '수',
-            '4': '목',
-            '5': '금'
-        };
+        return divisionColorMap.get(division);
+    }
 
-        // 1. Google OAuth 로그인 초기화 및 지도 초기화
-        window.onload = () => {
-            initGoogleAuth();
-            initMap();
-        };
+    // HTML 삽입 시 특수문자 처리
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[char]);
+    }
 
-        function initGoogleAuth() {
-            if (typeof google === 'undefined' || !google.accounts) {
-                setTimeout(initGoogleAuth, 100);
-                return;
-            }
+    // ==========================================
+    // 초기화
+    // ==========================================
+    window.onload = () => {
+        initGoogleAuth();
 
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
+        if (window.kakao && kakao.maps) {
+            kakao.maps.load(initMap);
+        } else {
+            alert('카카오 지도 API를 불러오지 못했습니다. API 키와 도메인을 확인해주세요.');
+        }
+    };
 
-                callback: async (response) => {
-                    if (response.error !== undefined) {
-                        alert('인증 오류가 발생했습니다: ' + response.error);
-                        return;
-                    }
-
-                    document.getElementById('login-overlay').style.display = 'none';
-
-                    await fetchSheetData(response.access_token);
-                }
-            });
+    // ==========================================
+    // Google OAuth
+    // ==========================================
+    function initGoogleAuth() {
+        if (typeof google === 'undefined' || !google.accounts) {
+            setTimeout(initGoogleAuth, 100);
+            return;
         }
 
-        function handleAuthClick() {
-            if (!tokenClient) {
-                alert('구글 인증 라이브러리를 로드 중입니다. 잠시 후 다시 시도해주세요.');
-                return;
-            }
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
 
-            tokenClient.requestAccessToken({
-                prompt: 'consent'
-            });
-        }
-
-        // 2. Google Sheets API로 데이터 가져오기
-        async function fetchSheetData(accessToken) {
-            const url =
-                `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A1:Z`;
-
-            try {
-                const res = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
-
-                if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(errData.error?.message || '데이터 로딩 실패');
-                }
-
-                const data = await res.json();
-                const rows = data.values || [];
-
-                if (rows.length < 2) {
-                    alert('시트에 데이터가 없습니다.');
+            callback: async response => {
+                if (response.error) {
+                    alert('인증 오류: ' + response.error);
                     return;
                 }
 
-                // 첫 번째 행(헤더)에서 컬럼 위치 파악
-                const headers = rows[0].map(h => (h || '').trim());
+                document.getElementById('login-overlay').style.display =
+                    'none';
 
-                const idxName = headers.indexOf('거래처명');
-                const idxAddr = headers.indexOf('주소');
-                const idxDow = headers.indexOf('dow');
-                const idxLat = headers.indexOf('x');
-                const idxLng = headers.indexOf('y');
-                const idxDeleted = headers.indexOf('deleted');
-                const idxShowMap = headers.indexOf('지도 표시');
-
-                // 두 번째 행부터 데이터 파싱
-                customerData = [];
-
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-
-                    // deleted 컬럼값 확인
-                    const isDeleted = idxDeleted !== -1
-                        ? (row[idxDeleted] || '').toString().trim()
-                        : '0';
-
-                    // 지도 표시 컬럼값 확인
-                    const showMapVal = idxShowMap !== -1
-                        ? (row[idxShowMap] || '').toString().trim()
-                        : '0';
-
-                    // deleted가 1이거나 지도 표시가 0이면 제외
-                    if (isDeleted === '1' || showMapVal === '0') {
-                        continue;
-                    }
-
-                    // 요일 구분
-                    const rawDow = idxDow !== -1
-                        ? (row[idxDow] || '').toString().trim()
-                        : '';
-
-                    const category =
-                        DOW_MAP[rawDow] || (rawDow ? rawDow : '미분류');
-
-                    // 조건을 통과한 거래처만 저장
-                    customerData.push({
-                        name: idxName !== -1 ? (row[idxName] || '') : '',
-                        address: idxAddr !== -1 ? (row[idxAddr] || '') : '',
-                        lat: idxLat !== -1 ? parseFloat(row[idxLat]) : NaN,
-                        lng: idxLng !== -1 ? parseFloat(row[idxLng]) : NaN,
-                        category: category,
-                        showMap: showMapVal
-                    });
-                }
-
-                renderSubTabs();
-                renderTable('전체');
-                renderMapMarkers();
-
-            } catch (err) {
-                console.error(err);
-                alert('시트 데이터를 불러오는데 실패했습니다: ' + err.message);
+                await fetchSheetData(response.access_token);
             }
+        });
+    }
+
+    function handleAuthClick() {
+        if (!tokenClient) {
+            alert('구글 인증 라이브러리를 로드 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
         }
 
-        // 3. 목록 세부 탭(요일 필터) 생성
-        function renderSubTabs() {
-            const dowOrder = ['월', '화', '수', '목', '금'];
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+    }
 
-            const uniqueCategories = Array.from(
-                new Set(customerData.map(item => item.category))
-            );
+    // ==========================================
+    // Google Sheets 데이터
+    // ==========================================
+    async function fetchSheetData(accessToken) {
+        const url =
+            `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A1:Z`;
 
-            // 요일 정렬 후 기타 항목 배치
-            uniqueCategories.sort((a, b) => {
-                const indexA = dowOrder.indexOf(a);
-                const indexB = dowOrder.indexOf(b);
-
-                if (indexA !== -1 && indexB !== -1) {
-                    return indexA - indexB;
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
                 }
-
-                if (indexA !== -1) return -1;
-                if (indexB !== -1) return 1;
-
-                return a.localeCompare(b);
             });
 
-            const categories = ['전체', ...uniqueCategories];
-            const container = document.getElementById('sub-tabs');
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(
+                    errData.error?.message || '데이터 로딩 실패'
+                );
+            }
 
-            container.innerHTML = '';
+            const data = await res.json();
+            const rows = data.values || [];
 
-            categories.forEach(cat => {
-                const btn = document.createElement('button');
-
-                btn.className =
-                    `sub-tab-btn ${cat === '전체' ? 'active' : ''}`;
-
-                btn.textContent = cat;
-
-                btn.onclick = () => {
-                    document.querySelectorAll('.sub-tab-btn')
-                        .forEach(b => b.classList.remove('active'));
-
-                    btn.classList.add('active');
-
-                    currentFilter = cat;
-                    renderTable(cat);
-                };
-
-                container.appendChild(btn);
-            });
-        }
-
-        // 4. 고객 목록 표 렌더링
-        function renderTable(filterCategory) {
-            const tbody = document.getElementById('customer-table-body');
-
-            tbody.innerHTML = '';
-
-            const filteredData =
-                filterCategory === '전체'
-                    ? customerData
-                    : customerData.filter(
-                        item => item.category === filterCategory
-                    );
-
-            if (filteredData.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="2"
-                            style="text-align:center; color:#888;">
-                            해당하는 고객이 없습니다.
-                        </td>
-                    </tr>
-                `;
+            if (rows.length < 2) {
+                alert('시트에 데이터가 없습니다.');
                 return;
             }
 
-            filteredData.forEach(item => {
-                const tr = document.createElement('tr');
+            const headers = rows[0].map(h => (h || '').trim());
 
-                const hasCoords =
-                    !isNaN(item.lat) && !isNaN(item.lng);
+            const idxName = headers.indexOf('거래처명');
+            const idxAddr = headers.indexOf('주소');
+            const idxDow = headers.indexOf('dow');
+            const idxLat = headers.indexOf('x');
+            const idxLng = headers.indexOf('y');
+            const idxDeleted = headers.indexOf('deleted');
+            const idxShowMap = headers.indexOf('지도 표시');
 
-                tr.innerHTML = `
-                    <td>
-                        <strong>${escapeHtml(item.name)}</strong>
-                        <br>
-                        <span style="font-size: 13px; color: #555;">
-                            ${escapeHtml(item.address)}
-                        </span>
-                    </td>
+            customerData = [];
 
-                    <td class="navigation-cell">
-                        ${hasCoords ? `
-                            <div class="table-nav-group">
-                                <button
-                                    class="table-nav-btn btn-naver"
-                                    onclick="openNaverNavi(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">
-                                    네이버
-                                </button>
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
 
-                                <button
-                                    class="table-nav-btn btn-tmap"
-                                    onclick="openTmap(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">
-                                    TMAP
-                                </button>
-                            </div>
-                        ` : `
-                            <span style="font-size:11px; color:#aaa;">
-                                좌표없음
-                            </span>
-                        `}
-                    </td>
-                `;
+                const isDeleted = idxDeleted !== -1
+                    ? String(row[idxDeleted] || '').trim()
+                    : '0';
 
-                tbody.appendChild(tr);
-            });
-        }
+                const showMapVal = idxShowMap !== -1
+                    ? String(row[idxShowMap] || '').trim()
+                    : '0';
 
-        // 5. 지도 초기화
-        function initMap() {
-            map = L.map('map').setView([37.5665, 126.9780], 11);
-
-            L.tileLayer(
-                'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                {
-                    maxZoom: 19,
-                    attribution: '© OpenStreetMap'
+                if (isDeleted === '1' || showMapVal === '0') {
+                    continue;
                 }
-            ).addTo(map);
-        }
 
-        // 5-1. 지도 마커 렌더링
-        // 좌표가 있고 '지도 표시' 값이 1인 거래처만 표시
-        function renderMapMarkers() {
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
+                const rawDow = idxDow !== -1
+                    ? String(row[idxDow] || '').trim()
+                    : '';
 
-            const bounds = [];
+                const category =
+                    DOW_MAP[rawDow] || (rawDow || '미분류');
 
-            customerData.forEach(item => {
-                if (
-                    !isNaN(item.lat) &&
-                    !isNaN(item.lng) &&
-                    item.showMap === '1'
-                ) {
-                    bounds.push([item.lat, item.lng]);
+                const lat = idxLat !== -1
+                    ? parseFloat(row[idxLat])
+                    : NaN;
 
-                    const pinColor = getDivisionColor(item.category);
-                    const pinIcon = L.divIcon({
-                        className: 'customer-pin-wrap',
-                        html: `<div class="customer-pin" style="background:${pinColor};"></div>`,
-                        iconSize: [28, 32],
-                        iconAnchor: [14, 30],
-                        popupAnchor: [0, -28]
-                    });
+                const lng = idxLng !== -1
+                    ? parseFloat(row[idxLng])
+                    : NaN;
 
-                    const marker = L.marker(
-                        [item.lat, item.lng],
-                        { icon: pinIcon }
-                    ).addTo(map);
-
-                    // 거래처명을 핀 옆에 항상 표시
-                    marker.bindTooltip(escapeHtml(item.name || '이름 없음'), {
-                        permanent: true,
-                        direction: 'right',
-                        offset: [10, -10],
-                        className: 'customer-name-label'
-                    });
-
-                    const popupContent = `
-                        <div class="info-popup">
-                            <span class="badge"
-                                style="margin-bottom: 5px;">
-                                ${escapeHtml(item.category)}
-                            </span>
-
-                            <h3>${escapeHtml(item.name)}</h3>
-
-                            <p>${escapeHtml(item.address)}</p>
-
-                            <div class="nav-btn-group">
-                                <button
-                                    class="nav-btn btn-naver"
-                                    onclick="openNaverNavi(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">
-                                    네이버 지도
-                                </button>
-
-                                <button
-                                    class="nav-btn btn-tmap"
-                                    onclick="openTmap(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">
-                                    TMAP
-                                </button>
-                            </div>
-                        </div>
-                    `;
-
-                    marker.bindPopup(popupContent);
-                    markers.push(marker);
-                }
-            });
-
-            // 현재 위치를 중심으로 지도 표시. 위치 권한이 없으면 기존 기본 위치 사용.
-            if (!currentLocationRequested) {
-                currentLocationRequested = true;
-
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        position => {
-                            const lat = position.coords.latitude;
-                            const lng = position.coords.longitude;
-
-                            map.setView([lat, lng], 13);
-
-                            if (currentLocationMarker) {
-                                map.removeLayer(currentLocationMarker);
-                            }
-
-                            currentLocationMarker = L.marker([lat, lng], {
-                                icon: L.divIcon({
-                                    className: '',
-                                    html: '<div class="current-location-dot"></div>',
-                                    iconSize: [18, 18],
-                                    iconAnchor: [9, 9]
-                                }),
-                                zIndexOffset: 1000
-                            }).addTo(map);
-
-                            currentLocationMarker.bindTooltip('현재 위치', {
-                                permanent: false,
-                                direction: 'top'
-                            });
-                        },
-                        error => {
-                            console.warn('현재 위치를 가져오지 못했습니다:', error.message);
-                            if (bounds.length > 0) {
-                                map.fitBounds(bounds, { padding: [50, 50] });
-                            }
-                        },
-                        {
-                            enableHighAccuracy: true,
-                            timeout: 10000,
-                            maximumAge: 60000
-                        }
-                    );
-                } else if (bounds.length > 0) {
-                    map.fitBounds(bounds, { padding: [50, 50] });
-                }
+                customerData.push({
+                    name: idxName !== -1 ? (row[idxName] || '') : '',
+                    address: idxAddr !== -1 ? (row[idxAddr] || '') : '',
+                    lat,
+                    lng,
+                    category,
+                    showMap: showMapVal
+                });
             }
+
+            renderSubTabs();
+            renderTable('전체');
+            renderMapMarkers();
+
+        } catch (err) {
+            console.error(err);
+            alert('시트 데이터를 불러오는데 실패했습니다: ' + err.message);
+        }
+    }
+
+    // ==========================================
+    // 고객 목록의 요일 탭
+    // ==========================================
+    function renderSubTabs() {
+        const dowOrder = ['월', '화', '수', '목', '금'];
+
+        const uniqueCategories = Array.from(
+            new Set(customerData.map(item => item.category))
+        );
+
+        uniqueCategories.sort((a, b) => {
+            const indexA = dowOrder.indexOf(a);
+            const indexB = dowOrder.indexOf(b);
+
+            if (indexA !== -1 && indexB !== -1) {
+                return indexA - indexB;
+            }
+
+            if (indexA !== -1) return -1;
+            if (indexB !== -1) return 1;
+
+            return a.localeCompare(b);
+        });
+
+        const container = document.getElementById('sub-tabs');
+        container.innerHTML = '';
+
+        ['전체', ...uniqueCategories].forEach(cat => {
+            const btn = document.createElement('button');
+
+            btn.className =
+                'sub-tab-btn' + (cat === '전체' ? ' active' : '');
+
+            btn.textContent = cat;
+
+            btn.onclick = () => {
+                document.querySelectorAll('.sub-tab-btn')
+                    .forEach(b => b.classList.remove('active'));
+
+                btn.classList.add('active');
+                currentFilter = cat;
+                renderTable(cat);
+            };
+
+            container.appendChild(btn);
+        });
+    }
+
+    // ==========================================
+    // 고객 목록 표
+    // ==========================================
+    function renderTable(filterCategory) {
+        const tbody =
+            document.getElementById('customer-table-body');
+
+        tbody.innerHTML = '';
+
+        const filteredData = filterCategory === '전체'
+            ? customerData
+            : customerData.filter(
+                item => item.category === filterCategory
+            );
+
+        if (filteredData.length === 0) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+
+            td.colSpan = 2;
+            td.style.textAlign = 'center';
+            td.style.color = '#888';
+            td.textContent = '해당하는 고객이 없습니다.';
+
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            return;
         }
 
-        // 6. 상단 메인 탭 전환
-        function switchMainTab(tabName) {
-            document.querySelectorAll('.main-tab-btn')
-                .forEach(btn => btn.classList.remove('active'));
+        filteredData.forEach(item => {
+            const tr = document.createElement('tr');
+            const nameTd = document.createElement('td');
+            const navTd = document.createElement('td');
 
-            document.querySelectorAll('.tab-content')
-                .forEach(content => content.classList.remove('active'));
+            const strong = document.createElement('strong');
+            strong.textContent = item.name;
 
-            if (tabName === 'list') {
-                document.querySelectorAll('.main-tab-btn')[0]
-                    .classList.add('active');
+            const br = document.createElement('br');
+            const address = document.createElement('span');
 
-                document.getElementById('tab-list')
-                    .classList.add('active');
+            address.style.fontSize = '13px';
+            address.style.color = '#555';
+            address.textContent = item.address;
 
+            nameTd.append(strong, br, address);
+
+            navTd.className = 'navigation-cell';
+
+            const hasCoords = isValidCoords(item);
+
+            if (hasCoords) {
+                const group = document.createElement('div');
+                group.className = 'table-nav-group';
+
+                const naverBtn = document.createElement('button');
+                naverBtn.className = 'table-nav-btn btn-naver';
+                naverBtn.textContent = '네이버';
+                naverBtn.onclick = () =>
+                    openNaverNavi(item.lat, item.lng, item.name);
+
+                const tmapBtn = document.createElement('button');
+                tmapBtn.className = 'table-nav-btn btn-tmap';
+                tmapBtn.textContent = 'TMAP';
+                tmapBtn.onclick = () =>
+                    openTmap(item.lat, item.lng, item.name);
+
+                group.append(naverBtn, tmapBtn);
+                navTd.appendChild(group);
             } else {
-                document.querySelectorAll('.main-tab-btn')[1]
-                    .classList.add('active');
-
-                document.getElementById('tab-map')
-                    .classList.add('active');
-
-                // 지도 크기 재계산
-                setTimeout(() => {
-                    if (map) {
-                        map.invalidateSize();
-
-                        // 이미 현재 위치를 확보했다면 다시 중심으로 이동
-                        if (currentLocationMarker) {
-                            map.setView(currentLocationMarker.getLatLng(), 13);
-                        }
-                    }
-                }, 100);
+                const span = document.createElement('span');
+                span.style.fontSize = '11px';
+                span.style.color = '#aaa';
+                span.textContent = '좌표없음';
+                navTd.appendChild(span);
             }
+
+            tr.append(nameTd, navTd);
+            tbody.appendChild(tr);
+        });
+    }
+
+    function isValidCoords(item) {
+        return Number.isFinite(item.lat) &&
+               Number.isFinite(item.lng) &&
+               item.lat >= -90 && item.lat <= 90 &&
+               item.lng >= -180 && item.lng <= 180;
+    }
+
+    // ==========================================
+    // 카카오 지도 초기화
+    // ==========================================
+    function initMap() {
+        const container = document.getElementById('map');
+
+        map = new kakao.maps.Map(container, {
+            center: new kakao.maps.LatLng(37.5665, 126.9780),
+            level: 5
+        });
+
+        infoWindow = new kakao.maps.InfoWindow({
+            removable: true,
+            zIndex: 20
+        });
+
+        // 지도 클릭 시 열린 정보창 닫기
+        kakao.maps.event.addListener(map, 'click', () => {
+            infoWindow.close();
+        });
+    }
+
+    // ==========================================
+    // 지도 마커 및 거래처명 렌더링
+    // ==========================================
+    function renderMapMarkers() {
+        if (!map) return;
+
+        markers.forEach(marker => marker.setMap(null));
+        labelOverlays.forEach(overlay => overlay.setMap(null));
+
+        markers = [];
+        labelOverlays = [];
+
+        const bounds = new kakao.maps.LatLngBounds();
+
+        customerData.forEach(item => {
+            if (!isValidCoords(item) || item.showMap !== '1') {
+                return;
+            }
+
+            const position =
+                new kakao.maps.LatLng(item.lat, item.lng);
+
+            bounds.extend(position);
+
+            const pinColor = getDivisionColor(item.category);
+
+            const pinContent = `
+                <div class="customer-pin-wrap">
+                    <div class="customer-pin"
+                         style="background:${pinColor};"></div>
+                </div>
+            `;
+
+            const pinOverlay = new kakao.maps.CustomOverlay({
+                position,
+                content: pinContent,
+                xAnchor: 0.5,
+                yAnchor: 1,
+                zIndex: 5,
+                clickable: true
+            });
+
+            pinOverlay.setMap(map);
+            markers.push(pinOverlay);
+
+            // 거래처명 상시 표시
+            const labelContent = document.createElement('div');
+            labelContent.className = 'customer-name-label';
+            labelContent.textContent = item.name || '이름 없음';
+
+            const labelOverlay = new kakao.maps.CustomOverlay({
+                position,
+                content: labelContent,
+                xAnchor: 0,
+                yAnchor: 0.5,
+                zIndex: 4
+            });
+
+            labelOverlay.setMap(map);
+            labelOverlays.push(labelOverlay);
+
+            // 핀 클릭 시 정보창 표시
+            labelContent.style.cursor = 'default';
+
+            pinContentClick(pinOverlay, item, position);
+        });
+
+        // 최초 지도 범위는 거래처 좌표를 기준으로 설정.
+        // 현재 위치를 가져오면 현재 위치 중심으로 이동합니다.
+        if (!currentLocationRequested) {
+            if (customerData.some(
+                item => isValidCoords(item) && item.showMap === '1'
+            )) {
+                map.setBounds(bounds);
+            }
+
+            requestCurrentLocation();
+        }
+    }
+
+    function pinContentClick(overlay, item, position) {
+        // CustomOverlay 내부 요소가 생성된 뒤 클릭 이벤트 연결
+        const content = overlay.getContent();
+
+        const pin = content.querySelector('.customer-pin');
+
+        if (pin) {
+            pin.style.cursor = 'pointer';
+
+            pin.addEventListener('click', event => {
+                event.stopPropagation();
+                showCustomerInfo(item, position);
+            });
+        }
+    }
+
+    // ==========================================
+    // 거래처 정보창
+    // ==========================================
+    function showCustomerInfo(item, position) {
+        const content = document.createElement('div');
+        content.className = 'info-popup';
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = item.category;
+
+        const title = document.createElement('h3');
+        title.textContent = item.name || '이름 없음';
+
+        const address = document.createElement('p');
+        address.textContent = item.address || '주소 없음';
+
+        const group = document.createElement('div');
+        group.className = 'nav-btn-group';
+
+        const naverBtn = document.createElement('button');
+        naverBtn.className = 'nav-btn btn-naver';
+        naverBtn.textContent = '네이버 지도';
+        naverBtn.onclick = () =>
+            openNaverNavi(item.lat, item.lng, item.name);
+
+        const tmapBtn = document.createElement('button');
+        tmapBtn.className = 'nav-btn btn-tmap';
+        tmapBtn.textContent = 'TMAP';
+        tmapBtn.onclick = () =>
+            openTmap(item.lat, item.lng, item.name);
+
+        group.append(naverBtn, tmapBtn);
+        content.append(badge, title, address, group);
+
+        infoWindow.setContent(content);
+        infoWindow.setPosition(position);
+        infoWindow.open(map);
+    }
+
+    // ==========================================
+    // 현재 위치
+    // ==========================================
+    function requestCurrentLocation() {
+        if (currentLocationRequested) return;
+
+        currentLocationRequested = true;
+
+        if (!navigator.geolocation) {
+            console.warn('이 브라우저는 위치 정보를 지원하지 않습니다.');
+            return;
         }
 
-        // 7. 네이버 지도 길 안내
-        function openNaverNavi(lat, lng, name) {
-            window.location.href =
-                `nmap://route/car?dlat=${lat}&dlng=${lng}&dname=${encodeURIComponent(name)}&appname=myCustomerMap`;
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                currentLocation = new kakao.maps.LatLng(lat, lng);
+
+                showCurrentLocation();
+                map.setCenter(currentLocation);
+                map.setLevel(5);
+            },
+            error => {
+                console.warn(
+                    '현재 위치를 가져오지 못했습니다:',
+                    error.message
+                );
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            }
+        );
+    }
+
+    function showCurrentLocation() {
+        if (!currentLocation || !map) return;
+
+        if (currentLocationMarker) {
+            currentLocationMarker.setMap(null);
         }
 
-        // 8. TMAP 길 안내
-        function openTmap(lat, lng, name) {
-            window.location.href =
-                `tmap://route?goalname=${encodeURIComponent(name)}&goalx=${lng}&goaly=${lat}`;
-        }
+        const content = document.createElement('div');
+        content.className = 'current-location-dot';
+        content.title = '현재 위치';
 
-        // 9. HTML 특수문자 처리
-        function escapeHtml(str) {
-            return (str || '')
-                .replace(/'/g, "\\'")
-                .replace(/"/g, "&quot;");
+        currentLocationMarker = new kakao.maps.CustomOverlay({
+            position: currentLocation,
+            content,
+            xAnchor: 0.5,
+            yAnchor: 0.5,
+            zIndex: 100
+        });
+
+        currentLocationMarker.setMap(map);
+    }
+
+    function goToMyLocation() {
+        if (currentLocation) {
+            map.setCenter(currentLocation);
+            map.setLevel(5);
+        } else {
+            // 최초 위치 요청이 이미 실패한 경우에도
+            // 버튼을 누르면 다시 위치를 요청합니다.
+            currentLocationRequested = false;
+            requestCurrentLocation();
         }
-    </script>
+    }
+
+    // ==========================================
+    // 메인 탭 전환
+    // ==========================================
+    function switchMainTab(tabName) {
+        document.querySelectorAll('.main-tab-btn')
+            .forEach(btn => btn.classList.remove('active'));
+
+        document.querySelectorAll('.tab-content')
+            .forEach(content => content.classList.remove('active'));
+
+        if (tabName === 'list') {
+            document.querySelectorAll('.main-tab-btn')[0]
+                .classList.add('active');
+
+            document.getElementById('tab-list')
+                .classList.add('active');
+        } else {
+            document.querySelectorAll('.main-tab-btn')[1]
+                .classList.add('active');
+
+            document.getElementById('tab-map')
+                .classList.add('active');
+
+            setTimeout(() => {
+                if (map) {
+                    map.relayout();
+
+                    // 지도 탭에 들어올 때 현재 위치 중심으로 표시
+                    if (currentLocation) {
+                        map.setCenter(currentLocation);
+                    }
+                }
+            }, 100);
+        }
+    }
+
+    // ==========================================
+    // 네이버 지도 길 안내
+    // ==========================================
+    function openNaverNavi(lat, lng, name) {
+        const url =
+            `nmap://route/car?dlat=${lat}&dlng=${lng}` +
+            `&dname=${encodeURIComponent(name)}` +
+            `&appname=myCustomerMap`;
+
+        window.location.href = url;
+    }
+
+    // ==========================================
+    // TMAP 길 안내
+    // ==========================================
+    function openTmap(lat, lng, name) {
+        const url =
+            `tmap://route?goalname=${encodeURIComponent(name)}` +
+            `&goalx=${lng}&goaly=${lat}`;
+
+        window.location.href = url;
+    }
+</script>
 
 </body>
 </html>
