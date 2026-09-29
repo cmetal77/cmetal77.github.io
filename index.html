@@ -170,6 +170,7 @@
         th, td {
             padding: 12px 10px;
             text-align: left;
+            vertical-align: middle;
             border-bottom: 1px solid #dee2e6;
         }
 
@@ -195,28 +196,34 @@
             color: #333;
         }
 
-        /* 테이블 내 네비게이션 버튼 */
+        /* 길안내 셀의 세로 중앙 정렬 */
+        .navigation-cell {
+            vertical-align: middle;
+        }
+
+        /* 길안내 버튼 두 개를 세로로 배치 */
+        .table-nav-group {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* 테이블 내 길안내 버튼 */
         .table-nav-btn {
             display: block;
             width: 100%;
             box-sizing: border-box;
-
-            padding: 10px 12px;
             min-height: 44px;
+            padding: 10px 8px;
+            margin: 0;
 
             border: none;
             border-radius: 6px;
-
             color: white;
             font-size: 13px;
             font-weight: bold;
             cursor: pointer;
-
-            margin: 0 0 8px 0;
-        }
-        /* 마지막 버튼 아래 여백 제거 */
-        .table-nav-btn:last-child {
-            margin-bottom: 0;
         }
 
         /* [두번째 탭] 지도 화면 */
@@ -575,19 +582,21 @@
                         </span>
                     </td>
 
-                    <td>
+                    <td class="navigation-cell">
                         ${hasCoords ? `
-                            <button
-                                class="table-nav-btn btn-naver"
-                                onclick="openNaverNavi(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">
-                                네이버
-                            </button>
+                            <div class="table-nav-group">
+                                <button
+                                    class="table-nav-btn btn-naver"
+                                    onclick="openNaverNavi(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">
+                                    네이버
+                                </button>
 
-                            <button
-                                class="table-nav-btn btn-tmap"
-                                onclick="openTmap(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">
-                                TMAP
-                            </button>
+                                <button
+                                    class="table-nav-btn btn-tmap"
+                                    onclick="openTmap(${item.lat}, ${item.lng}, '${escapeHtml(item.name)}')">
+                                    TMAP
+                                </button>
+                            </div>
                         ` : `
                             <span style="font-size:11px; color:#aaa;">
                                 좌표없음
