@@ -832,8 +832,17 @@
     }
 
     function pinContentClick(overlay, item, position) {
-        // CustomOverlay 내부 요소가 생성된 뒤 클릭 이벤트 연결
-        const content = overlay.getContent();
+        // 카카오 CustomOverlay의 content는 HTML 문자열이므로
+        // 문자열을 DOM 요소로 변환한 뒤 이벤트를 연결합니다.
+        const content = document.createElement('div');
+
+        content.innerHTML = `
+            <div class="customer-pin-wrap">
+                <div class="customer-pin"
+                    style="background:${getDivisionColor(item.category)};">
+                </div>
+            </div>
+        `;
 
         const pin = content.querySelector('.customer-pin');
 
@@ -845,6 +854,9 @@
                 showCustomerInfo(item, position);
             });
         }
+
+        // 기존 오버레이에 DOM 요소를 설정합니다.
+        overlay.setContent(content);
     }
 
     // ==========================================
