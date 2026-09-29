@@ -138,7 +138,7 @@
                         <thead>
                             <tr>
                                 <th>구분</th>
-                                <th>고객명</th>
+                                <th>거래처명</th>
                                 <th>주소</th>
                                 <th style="width: 110px;">길안내</th>
                             </tr>
@@ -172,6 +172,15 @@
         let map;
         let markers = [];
         let currentFilter = '전체';
+
+        // dow(요일) 매핑 테이블 (1: 월 ~ 5: 금)
+        const DOW_MAP = {
+            '1': '월',
+            '2': '화',
+            '3': '수',
+            '4': '목',
+            '5': '금'
+        };
 
         // 1. Google OAuth 로그인 초기화 및 GIS 라이브러리 체크
         window.onload = () => {
@@ -207,10 +216,10 @@
             tokenClient.requestAccessToken({ prompt: 'consent' });
         }
 
-        // 2. Google Sheets API로 데이터 가져오기
+        // 2. Google Sheets API로 데이터 가져오기 (컬럼명 기반 매핑)
         async function fetchSheetData(accessToken) {
-            // A2:E 범위 (고객명, 주소, 위도, 경도, 구분)
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A:Q`;
+            // 헤더(1행) 포함 전체 데이터 가져오기
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A1:Z`;
 
             try {
                 const res = await fetch(url, {
@@ -225,13 +234,47 @@
                 const data = await res.json();
                 const rows = data.values || [];
 
-                customerData = rows.map(row => ({
-                    name: row[2] || '',
-                    address: row[7] || '',
-                    lat: parseFloat(row[12]),
-                    lng: parseFloat(row[13]),
-                    category: row[10] ? row[10].trim() : '미분류'
-                }));
+                if (rows.length < 2) {
+                    alert('시트에 데이터가 없습니다.');
+                    return;
+                }
+
+                // 첫번째 행(헤더) 컬럼 위치 파악
+                const headers = rows[0].map(h => (h || '').trim());
+                const idxName = headers.indexOf('거래처명');
+                const idxAddr = headers.indexOf('주소');
+                const idxDow = headers.indexOf('dow');
+                const idxLat = headers.indexOf('x');
+                const idxLng = headers.indexOf('y');
+                const idxDeleted = headers.indexOf('deleted');
+                const idxShowMap = headers.indexOf('지도 표시'); // '지도 표시' 컬럼 인덱스 추가
+
+                // 2번째 행부터 데이터 파싱
+                customerData = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    
+                    // deleted 컬럼이 1인 건 제외
+                    const isDeleted = idxDeleted !== -1 ? (row[idxDeleted] || '').toString().trim() : '0';
+                    if (isDeleted === '1') {
+                        continue;
+                    }
+
+                    const rawDow = idxDow !== -1 ? (row[idxDow] || '').toString().trim() : '';
+                    const category = DOW_MAP[rawDow] || (rawDow ? rawDow : '미분류');
+
+                    // '지도 표시' 값 추출 (1인 경우 체크)
+                    const showMapVal = idxShowMap !== -1 ? (row[idxShowMap] || '').toString().trim() : '0';
+
+                    customerData.push({
+                        name: idxName !== -1 ? (row[idxName] || '') : '',
+                        address: idxAddr !== -1 ? (row[idxAddr] || '') : '',
+                        lat: idxLat !== -1 ? parseFloat(row[idxLat]) : NaN,
+                        lng: idxLng !== -1 ? parseFloat(row[idxLng]) : NaN,
+                        category: category,
+                        showMap: showMapVal // '지도 표시' 정보 저장 ('1' 또는 '0')
+                    });
+                }
 
                 renderSubTabs();
                 renderTable('전체');
@@ -243,9 +286,23 @@
             }
         }
 
-        // 3. 목록 세부 탭 (구분 필터) 생성
+        // 3. 목록 세부 탭 (구분/요일 필터) 생성
         function renderSubTabs() {
-            const categories = ['전체', ...new Set(customerData.map(item => item.category))];
+            // 요일 정렬 순서 정의
+            const dowOrder = ['월', '화', '수', '목', '금'];
+            const uniqueCategories = Array.from(new Set(customerData.map(item => item.category)));
+
+            // 요일 우선 정렬 후 기타 항목 배치
+            uniqueCategories.sort((a, b) => {
+                const indexA = dowOrder.indexOf(a);
+                const indexB = dowOrder.indexOf(b);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+                return a.localeCompare(b);
+            });
+
+            const categories = ['전체', ...uniqueCategories];
             const container = document.getElementById('sub-tabs');
             container.innerHTML = '';
 
@@ -305,6 +362,7 @@
             }).addTo(map);
         }
 
+        // 5-1. 지도 마커 렌더링 ('지도 표시' 값이 '1'인 건만 표시)
         function renderMapMarkers() {
             markers.forEach(m => map.removeLayer(m));
             markers = [];
@@ -312,7 +370,8 @@
             const bounds = [];
 
             customerData.forEach(item => {
-                if (!isNaN(item.lat) && !isNaN(item.lng)) {
+                // 좌표가 존재하고 '지도 표시' 값이 '1'인 경우만 지도 표시
+                if (!isNaN(item.lat) && !isNaN(item.lng) && item.showMap === '1') {
                     bounds.push([item.lat, item.lng]);
 
                     const marker = L.marker([item.lat, item.lng]).addTo(map);
