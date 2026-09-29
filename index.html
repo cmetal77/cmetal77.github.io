@@ -410,7 +410,7 @@
         let currentLocationMarker = null;
         let currentLocationRequested = false;
 
-        // 구분별 핀 색상 팔레트 (구분 값에 따라 순환 적용)
+        // dow(요일)별 핀 색상 팔레트 (요일 값에 따라 순환 적용)
         const PIN_COLORS = [
             '#E53935', '#1E88E5', '#43A047', '#8E24AA',
             '#FB8C00', '#00897B', '#6D4C41', '#3949AB',
@@ -511,7 +511,6 @@
                 const idxLng = headers.indexOf('y');
                 const idxDeleted = headers.indexOf('deleted');
                 const idxShowMap = headers.indexOf('지도 표시');
-                const idxDivision = headers.indexOf('구분');
 
                 // 두 번째 행부터 데이터 파싱
                 customerData = [];
