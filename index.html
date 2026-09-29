@@ -430,30 +430,30 @@
                 for (let i = 1; i < rows.length; i++) {
                     const row = rows[i];
 
-                    // deleted 컬럼이 1인 건 제외
-                    const isDeleted =
-                        idxDeleted !== -1
-                            ? (row[idxDeleted] || '').toString().trim()
-                            : '0';
+                    // deleted 컬럼값 확인
+                    const isDeleted = idxDeleted !== -1
+                        ? (row[idxDeleted] || '').toString().trim()
+                        : '0';
 
-                    if (isDeleted === '1') {
+                    // 지도 표시 컬럼값 확인
+                    const showMapVal = idxShowMap !== -1
+                        ? (row[idxShowMap] || '').toString().trim()
+                        : '0';
+
+                    // deleted가 1이거나 지도 표시가 0이면 제외
+                    if (isDeleted === '1' || showMapVal === '0') {
                         continue;
                     }
 
-                    const rawDow =
-                        idxDow !== -1
-                            ? (row[idxDow] || '').toString().trim()
-                            : '';
+                    // 요일 구분
+                    const rawDow = idxDow !== -1
+                        ? (row[idxDow] || '').toString().trim()
+                        : '';
 
                     const category =
                         DOW_MAP[rawDow] || (rawDow ? rawDow : '미분류');
 
-                    // '지도 표시' 값 추출
-                    const showMapVal =
-                        idxShowMap !== -1
-                            ? (row[idxShowMap] || '').toString().trim()
-                            : '0';
-
+                    // 조건을 통과한 거래처만 저장
                     customerData.push({
                         name: idxName !== -1 ? (row[idxName] || '') : '',
                         address: idxAddr !== -1 ? (row[idxAddr] || '') : '',
