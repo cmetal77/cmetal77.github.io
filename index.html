@@ -302,7 +302,6 @@
                         <thead>
                             <tr>
                                 <th>거래처명</th>
-                                <th>주소</th>
                                 <th style="width: 110px;">길안내</th>
                             </tr>
                         </thead>
@@ -540,7 +539,7 @@
             if (filteredData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="3"
+                        <td colspan="2"
                             style="text-align:center; color:#888;">
                             해당하는 고객이 없습니다.
                         </td>
@@ -558,10 +557,10 @@
                 tr.innerHTML = `
                     <td>
                         <strong>${escapeHtml(item.name)}</strong>
-                    </td>
-
-                    <td style="font-size: 13px; color: #555;">
-                        ${escapeHtml(item.address)}
+                        <br>
+                        <span style="font-size: 13px; color: #555;">
+                            ${escapeHtml(item.address)}
+                        </span>
                     </td>
 
                     <td>
