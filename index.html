@@ -226,11 +226,11 @@
                 const rows = data.values || [];
 
                 customerData = rows.map(row => ({
-                    name: row[0] || '',
-                    address: row[1] || '',
-                    lat: parseFloat(row[2]),
-                    lng: parseFloat(row[3]),
-                    category: row[4] ? row[4].trim() : '미분류'
+                    name: row[2] || '',
+                    address: row[7] || '',
+                    lat: parseFloat(row[12]),
+                    lng: parseFloat(row[33]),
+                    category: row[10] ? row[10].trim() : '미분류'
                 }));
 
                 renderSubTabs();
