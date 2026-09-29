@@ -708,7 +708,7 @@
                 ) {
                     bounds.push([item.lat, item.lng]);
 
-                    const pinColor = getDivisionColor(item.division);
+                    const pinColor = getDivisionColor(item.category);
                     const pinIcon = L.divIcon({
                         className: 'customer-pin-wrap',
                         html: `<div class="customer-pin" style="background:${pinColor};"></div>`,
@@ -734,7 +734,7 @@
                         <div class="info-popup">
                             <span class="badge"
                                 style="margin-bottom: 5px;">
-                                ${escapeHtml(item.division)}
+                                ${escapeHtml(item.category)}
                             </span>
 
                             <h3>${escapeHtml(item.name)}</h3>
