@@ -239,6 +239,57 @@
             height: 100%;
         }
 
+        /* 거래처 지도 핀: 구분별 색상 */
+        .customer-pin-wrap {
+            background: transparent;
+            border: 0;
+        }
+
+        .customer-pin {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #ffffff;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.45);
+        }
+
+        .customer-pin::after {
+            content: "";
+            display: block;
+            width: 8px;
+            height: 8px;
+            margin: 6px auto;
+            background: #ffffff;
+            border-radius: 50%;
+        }
+
+        .customer-name-label {
+            background: rgba(255,255,255,0.95);
+            border: 1px solid #d0d7de;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            color: #222;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 3px 6px;
+            white-space: nowrap;
+        }
+
+        .customer-name-label::before {
+            border-right-color: #d0d7de;
+        }
+
+        .current-location-dot {
+            width: 18px;
+            height: 18px;
+            background: #1677ff;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 0 7px rgba(22,119,255,0.2),
+                        0 1px 5px rgba(0,0,0,0.35);
+        }
+
         /* 지도 인포윈도우 스타일 */
         .info-popup {
             min-width: 200px;
@@ -356,6 +407,25 @@
         let map;
         let markers = [];
         let currentFilter = '전체';
+        let currentLocationMarker = null;
+        let currentLocationRequested = false;
+
+        // 구분별 핀 색상 팔레트 (구분 값에 따라 순환 적용)
+        const PIN_COLORS = [
+            '#E53935', '#1E88E5', '#43A047', '#8E24AA',
+            '#FB8C00', '#00897B', '#6D4C41', '#3949AB',
+            '#D81B60', '#546E7A'
+        ];
+
+        const divisionColorMap = new Map();
+
+        function getDivisionColor(division) {
+            if (!divisionColorMap.has(division)) {
+                const color = PIN_COLORS[divisionColorMap.size % PIN_COLORS.length];
+                divisionColorMap.set(division, color);
+            }
+            return divisionColorMap.get(division);
+        }
 
         // 요일 매핑 테이블 (1: 월 ~ 5: 금)
         const DOW_MAP = {
@@ -441,6 +511,7 @@
                 const idxLng = headers.indexOf('y');
                 const idxDeleted = headers.indexOf('deleted');
                 const idxShowMap = headers.indexOf('지도 표시');
+                const idxDivision = headers.indexOf('구분');
 
                 // 두 번째 행부터 데이터 파싱
                 customerData = [];
@@ -638,16 +709,33 @@
                 ) {
                     bounds.push([item.lat, item.lng]);
 
-                    const marker = L.marker([
-                        item.lat,
-                        item.lng
-                    ]).addTo(map);
+                    const pinColor = getDivisionColor(item.division);
+                    const pinIcon = L.divIcon({
+                        className: 'customer-pin-wrap',
+                        html: `<div class="customer-pin" style="background:${pinColor};"></div>`,
+                        iconSize: [28, 32],
+                        iconAnchor: [14, 30],
+                        popupAnchor: [0, -28]
+                    });
+
+                    const marker = L.marker(
+                        [item.lat, item.lng],
+                        { icon: pinIcon }
+                    ).addTo(map);
+
+                    // 거래처명을 핀 옆에 항상 표시
+                    marker.bindTooltip(escapeHtml(item.name || '이름 없음'), {
+                        permanent: true,
+                        direction: 'right',
+                        offset: [10, -10],
+                        className: 'customer-name-label'
+                    });
 
                     const popupContent = `
                         <div class="info-popup">
                             <span class="badge"
                                 style="margin-bottom: 5px;">
-                                ${escapeHtml(item.category)}
+                                ${escapeHtml(item.division)}
                             </span>
 
                             <h3>${escapeHtml(item.name)}</h3>
@@ -671,15 +759,56 @@
                     `;
 
                     marker.bindPopup(popupContent);
-
                     markers.push(marker);
                 }
             });
 
-            if (bounds.length > 0) {
-                map.fitBounds(bounds, {
-                    padding: [50, 50]
-                });
+            // 현재 위치를 중심으로 지도 표시. 위치 권한이 없으면 기존 기본 위치 사용.
+            if (!currentLocationRequested) {
+                currentLocationRequested = true;
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+
+                            map.setView([lat, lng], 13);
+
+                            if (currentLocationMarker) {
+                                map.removeLayer(currentLocationMarker);
+                            }
+
+                            currentLocationMarker = L.marker([lat, lng], {
+                                icon: L.divIcon({
+                                    className: '',
+                                    html: '<div class="current-location-dot"></div>',
+                                    iconSize: [18, 18],
+                                    iconAnchor: [9, 9]
+                                }),
+                                zIndexOffset: 1000
+                            }).addTo(map);
+
+                            currentLocationMarker.bindTooltip('현재 위치', {
+                                permanent: false,
+                                direction: 'top'
+                            });
+                        },
+                        error => {
+                            console.warn('현재 위치를 가져오지 못했습니다:', error.message);
+                            if (bounds.length > 0) {
+                                map.fitBounds(bounds, { padding: [50, 50] });
+                            }
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 60000
+                        }
+                    );
+                } else if (bounds.length > 0) {
+                    map.fitBounds(bounds, { padding: [50, 50] });
+                }
             }
         }
 
@@ -709,6 +838,11 @@
                 setTimeout(() => {
                     if (map) {
                         map.invalidateSize();
+
+                        // 이미 현재 위치를 확보했다면 다시 중심으로 이동
+                        if (currentLocationMarker) {
+                            map.setView(currentLocationMarker.getLatLng(), 13);
+                        }
                     }
                 }, 100);
             }
