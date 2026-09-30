@@ -903,12 +903,15 @@
     // 현재 위치
     // ==========================================
     function requestCurrentLocation() {
-        if (currentLocationRequested) return;
+        // 최초 위치 요청이 진행됐으면 중복 요청 방지
+        // 단, 내 위치 버튼을 누르면 새로 조회
+        if (currentLocationRequested && !forceRefresh) return;
 
         currentLocationRequested = true;
 
         if (!navigator.geolocation) {
             console.warn('이 브라우저는 위치 정보를 지원하지 않습니다.');
+            alert('이 브라우저는 위치 정보를 지원하지 않습니다.');
             return;
         }
 
@@ -917,9 +920,13 @@
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
 
+                // 최신 위치로 갱신
                 currentLocation = new kakao.maps.LatLng(lat, lng);
 
+                // 기존 위치 마커를 최신 위치로 이동
                 showCurrentLocation();
+
+                // 지도도 최신 위치로 이동
                 map.setCenter(currentLocation);
                 map.setLevel(5);
             },
@@ -928,11 +935,18 @@
                     '현재 위치를 가져오지 못했습니다:',
                     error.message
                 );
+
+                alert(
+                    '현재 위치를 가져오지 못했습니다. ' +
+                    '위치 권한과 GPS 상태를 확인해 주세요.'
+                );
             },
             {
                 enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 60000
+                timeout: 15000,
+
+                // 캐시된 위치 대신 새 위치를 요청
+                maximumAge: 0
             }
         );
     }
@@ -960,15 +974,8 @@
     }
 
     function goToMyLocation() {
-        if (currentLocation) {
-            map.setCenter(currentLocation);
-            map.setLevel(5);
-        } else {
-            // 최초 위치 요청이 이미 실패한 경우에도
-            // 버튼을 누르면 다시 위치를 요청합니다.
-            currentLocationRequested = false;
-            requestCurrentLocation();
-        }
+        // 버튼을 누를 때마다 현재 위치를 새로 조회
+        requestCurrentLocation(true);
     }
 
     // ==========================================
