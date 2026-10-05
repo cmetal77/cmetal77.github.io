@@ -11,11 +11,9 @@
     <!-- 카카오 지도 API: 발급받은 JavaScript 키 입력 -->
     <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=452044976c6f8980378450013d49ce90&autoload=false"></script>
 
-    <!-- Google API JavaScript Client -->
-    <script async defer
-        src="https://apis.google.com/js/api.js"
-        onload="this.onload=function(){};handleClientLoad()"
-        onreadystatechange="if (this.readyState === 'complete') this.onload()"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client"
+            async defer></script>
 
     <style>
         * { box-sizing: border-box; }
@@ -388,9 +386,6 @@
     // ==========================================
     // 설정
     // ==========================================
-    const API_KEY =
-        'AIzaSyCuQF04KL4UTt24Nlhoj8fDT9_zetDHfes';
-
     const CLIENT_ID =
         '948214777302-hp55blfsm3kqf1v36k504pd43m32iqi5.apps.googleusercontent.com';
 
@@ -401,7 +396,7 @@
     const SCOPES =
         'https://www.googleapis.com/auth/spreadsheets.readonly';
 
-    let gapiReady = false;
+    let tokenClient;
     let customerData = [];
     let map;
     let markers = [];
@@ -462,91 +457,80 @@
     // 초기화
     // ==========================================
     window.onload = () => {
-        initMap();
+        initGoogleAuth();
+
+        if (window.kakao && kakao.maps) {
+            kakao.maps.load(initMap);
+        } else {
+            alert('카카오 지도 API를 불러오지 못했습니다. API 키와 도메인을 확인해주세요.');
+        }
     };
 
     // ==========================================
-    // Google 로그인 / 자동 로그인
+    // Google OAuth
     // ==========================================
-    function handleClientLoad() {
-        gapi.load('client:auth2', initGoogleAuth);
-    }
-
     function initGoogleAuth() {
-        gapi.client.init({
-            apiKey: API_KEY,
-            clientId: CLIENT_ID,
+        if (typeof google === 'undefined' || !google.accounts) {
+            setTimeout(initGoogleAuth, 100);
+            return;
+        }
+
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
             scope: SCOPES,
-            discoveryDocs: [
-                'https://sheets.googleapis.com/$discovery/rest?version=v4'
-            ]
-        }).then(function () {
-            gapiReady = true;
 
-            const auth = gapi.auth2.getAuthInstance();
+            callback: async response => {
+                if (response.error) {
+                    console.warn('Google 인증 응답:', response);
+                    document.getElementById('login-overlay').style.display = 'flex';
+                    return;
+                }
 
-            auth.isSignedIn.listen(updateSignInStatus);
-
-            // 핵심:
-            // 이미 Google 로그인 상태가 브라우저에 남아 있으면
-            // 로그인 버튼을 누르지 않고 바로 고객관리 화면으로 진입합니다.
-            updateSignInStatus(auth.isSignedIn.get());
-
-        }).catch(function (error) {
-            console.error('Google API 초기화 오류:', error);
-            console.error('상세 오류:', error?.result || error?.error || error);
-
-            alert(
-                'Google 인증 라이브러리를 초기화하지 못했습니다.\n\n' +
-                '브라우저 콘솔(F12)의 오류 내용을 확인해 주세요.'
-            );
+                document.getElementById('login-overlay').style.display = 'none';
+                await fetchSheetData(response.access_token);
+            }
         });
+
+        // 페이지 새로고침 시에는 기존 Google 로그인/승인 상태를
+        // 이용해 화면을 띄우지 않고 새 액세스 토큰을 요청합니다.
+        // 이미 승인한 경우 자동으로 시트 데이터를 불러옵니다.
+        tokenClient.requestAccessToken({ prompt: 'none' });
     }
 
     function handleAuthClick() {
-        if (!gapiReady || !gapi.auth2) {
-            alert('Google 인증 라이브러리를 아직 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+        if (!tokenClient) {
+            alert('구글 인증 라이브러리를 로드 중입니다. 잠시 후 다시 시도해주세요.');
             return;
         }
 
-        const auth = gapi.auth2.getAuthInstance();
-
-        if (auth.isSignedIn.get()) {
-            updateSignInStatus(true);
-            return;
-        }
-
-        auth.signIn().then(function () {
-            updateSignInStatus(true);
-        }).catch(function (error) {
-            console.error('Google 로그인 오류:', error);
-            alert('Google 로그인에 실패했습니다.');
-        });
-    }
-
-    function updateSignInStatus(isSignedIn) {
-        const overlay = document.getElementById('login-overlay');
-
-        if (isSignedIn) {
-            overlay.style.display = 'none';
-            fetchSheetData();
-        } else {
-            overlay.style.display = 'flex';
-        }
+        // 사용자가 직접 로그인 버튼을 누른 경우에는
+        // 필요한 경우 계정 선택/동의 화면을 표시합니다.
+        tokenClient.requestAccessToken({ prompt: 'consent' });
     }
 
     // ==========================================
     // Google Sheets 데이터
     // ==========================================
-    async function fetchSheetData() {
-        try {
-            const response =
-                await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: SHEET_NAME
-                });
+    async function fetchSheetData(accessToken) {
+        const url =
+            `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A1:Z`;
 
-            const rows = response.result.values || [];
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(
+                    errData.error?.message || '데이터 로딩 실패'
+                );
+            }
+
+            const data = await res.json();
+            const rows = data.values || [];
 
             if (rows.length < 2) {
                 alert('시트에 데이터가 없습니다.');
@@ -611,13 +595,7 @@
 
         } catch (err) {
             console.error(err);
-
-            const message =
-                err?.result?.error?.message ||
-                err?.message ||
-                '데이터 로딩 실패';
-
-            alert('시트 데이터를 불러오는데 실패했습니다: ' + message);
+            alert('시트 데이터를 불러오는데 실패했습니다: ' + err.message);
         }
     }
 
@@ -930,7 +908,7 @@
     // ==========================================
     // 현재 위치
     // ==========================================
-    function requestCurrentLocation() {
+    function requestCurrentLocation(forceRefresh = false) {
         // 최초 위치 요청이 진행됐으면 중복 요청 방지
         // 단, 내 위치 버튼을 누르면 새로 조회
         if (currentLocationRequested && !forceRefresh) return;
