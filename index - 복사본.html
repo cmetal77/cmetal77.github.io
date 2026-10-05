@@ -11,10 +11,9 @@
     <!-- 카카오 지도 API: 발급받은 JavaScript 키 입력 -->
     <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=452044976c6f8980378450013d49ce90&autoload=false"></script>
 
-    <!-- Google API JavaScript Client -->
-    <script async defer
-            src="https://apis.google.com/js/api.js"
-            onload="handleClientLoad()"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client"
+            async defer></script>
 
     <style>
         * { box-sizing: border-box; }
@@ -387,11 +386,8 @@
     // ==========================================
     // 설정
     // ==========================================
-    const API_KEY =
-        'AIzaSyDEQ5G2donT4g8ccgdXMjatGdIoudbGB1k';
-
     const CLIENT_ID =
-        '886148069929-0lajpi8dd0altkuqb4kmt7u40onaddup.apps.googleusercontent.com';
+        '948214777302-hp55blfsm3kqf1v36k504pd43m32iqi5.apps.googleusercontent.com';
 
     const SPREADSHEET_ID =
         '1_dSzaR0zIuM4G0JTi_J8860C6EUyFsqWhn45iS8KxxY';
@@ -400,7 +396,7 @@
     const SCOPES =
         'https://www.googleapis.com/auth/spreadsheets.readonly';
 
-    let gapiReady = false;
+    let tokenClient;
     let customerData = [];
     let map;
     let markers = [];
@@ -461,85 +457,74 @@
     // 초기화
     // ==========================================
     window.onload = () => {
-        initMap();
+        initGoogleAuth();
+
+        if (window.kakao && kakao.maps) {
+            kakao.maps.load(initMap);
+        } else {
+            alert('카카오 지도 API를 불러오지 못했습니다. API 키와 도메인을 확인해주세요.');
+        }
     };
 
     // ==========================================
-    // Google 로그인 / 자동 로그인
+    // Google OAuth
     // ==========================================
-    function handleClientLoad() {
-        gapi.load('client:auth2', initGoogleAuth);
-    }
-
     function initGoogleAuth() {
-        gapi.client.init({
-            apiKey: API_KEY,
-            clientId: CLIENT_ID,
+        if (typeof google === 'undefined' || !google.accounts) {
+            setTimeout(initGoogleAuth, 100);
+            return;
+        }
+
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
             scope: SCOPES,
-            discoveryDocs: [
-                'https://sheets.googleapis.com/$discovery/rest?version=v4'
-            ]
-        }).then(() => {
-            gapiReady = true;
 
-            const auth = gapi.auth2.getAuthInstance();
-            auth.isSignedIn.listen(updateSignInStatus);
+            callback: async response => {
+                if (response.error) {
+                    alert('인증 오류: ' + response.error);
+                    return;
+                }
 
-            // 기존 Google 로그인 상태가 있으면 인증창 없이 바로 진행
-            updateSignInStatus(auth.isSignedIn.get());
-        }).catch(err => {
-            console.error('Google API 초기화 오류:', err);
-            alert('Google 인증 라이브러리를 초기화하지 못했습니다.');
+                document.getElementById('login-overlay').style.display =
+                    'none';
+
+                await fetchSheetData(response.access_token);
+            }
         });
     }
 
     function handleAuthClick() {
-        if (!gapiReady) {
-            alert('Google 인증 라이브러리를 로드 중입니다. 잠시 후 다시 시도해주세요.');
+        if (!tokenClient) {
+            alert('구글 인증 라이브러리를 로드 중입니다. 잠시 후 다시 시도해주세요.');
             return;
         }
 
-        const auth = gapi.auth2.getAuthInstance();
-
-        // 이미 로그인되어 있으면 바로 데이터 로딩
-        if (auth.isSignedIn.get()) {
-            updateSignInStatus(true);
-            return;
-        }
-
-        auth.signIn().then(() => {
-            updateSignInStatus(true);
-        }).catch(err => {
-            console.error('Google 로그인 오류:', err);
-            alert('Google 로그인에 실패했습니다.');
-        });
-    }
-
-    function updateSignInStatus(isSignedIn) {
-        const overlay = document.getElementById('login-overlay');
-
-        if (isSignedIn) {
-            overlay.style.display = 'none';
-            fetchSheetData();
-        } else {
-            overlay.style.display = 'flex';
-        }
+        tokenClient.requestAccessToken({ prompt: 'consent' });
     }
 
     // ==========================================
     // Google Sheets 데이터
     // ==========================================
+    async function fetchSheetData(accessToken) {
+        const url =
+            `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!A1:Z`;
 
-    // ==========================================
-    async function fetchSheetData() {
         try {
-            const response =
-                await gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: SHEET_NAME
-                });
+            const res = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            });
 
-            const rows = response.result.values || [];
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(
+                    errData.error?.message || '데이터 로딩 실패'
+                );
+            }
+
+            const data = await res.json();
+            const rows = data.values || [];
 
             if (rows.length < 2) {
                 alert('시트에 데이터가 없습니다.');
@@ -604,13 +589,7 @@
 
         } catch (err) {
             console.error(err);
-
-            const message =
-                err?.result?.error?.message ||
-                err?.message ||
-                '데이터 로딩 실패';
-
-            alert('시트 데이터를 불러오는데 실패했습니다: ' + message);
+            alert('시트 데이터를 불러오는데 실패했습니다: ' + err.message);
         }
     }
 
