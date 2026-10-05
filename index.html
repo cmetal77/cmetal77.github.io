@@ -667,11 +667,28 @@
         const container = document.getElementById('sub-tabs');
         container.innerHTML = '';
 
+        // 오늘 요일을 자동 선택합니다.
+        // JavaScript의 getDay(): 일=0, 월=1, 화=2, 수=3, 목=4, 금=5, 토=6
+        const todayIndex = new Date().getDay();
+        const todayCategory =
+            todayIndex >= 1 && todayIndex <= 5
+                ? dowOrder[todayIndex - 1]
+                : '전체';
+
+        // 오늘 요일의 고객이 실제로 존재하면 오늘 요일을 선택하고,
+        // 주말이거나 오늘 요일의 고객이 없으면 '전체'를 선택합니다.
+        const initialFilter =
+            uniqueCategories.includes(todayCategory)
+                ? todayCategory
+                : '전체';
+
+        currentFilter = initialFilter;
+
         ['전체', ...uniqueCategories].forEach(cat => {
             const btn = document.createElement('button');
 
             btn.className =
-                'sub-tab-btn' + (cat === '전체' ? ' active' : '');
+                'sub-tab-btn' + (cat === initialFilter ? ' active' : '');
 
             btn.textContent = cat;
 
@@ -686,6 +703,9 @@
 
             container.appendChild(btn);
         });
+
+        // 데이터 로딩 직후 오늘 요일의 고객 목록을 표시합니다.
+        renderTable(initialFilter);
     }
 
     // ==========================================
